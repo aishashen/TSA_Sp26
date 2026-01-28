@@ -22,33 +22,63 @@ R packages needed for this assignment:"forecast","tseries", and "dplyr". Install
 
 ```{r}
 #Load/install required package here
-
+install.packages(c("forecast", "tseries", "dplyr"))
 ```
-
-
 ## Data set information  
 
 Consider the data provided in the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx" on our **Data** folder. The data comes from the US Energy Information and Administration and corresponds to the December 2025 Monthly Energy Review. The spreadsheet is ready to be used. Refer to the file "M2_ImportingData_XLSX.Rmd" in our Lessons folder for instructions on how to read $.xlsx$ files.
 
-```{r}
-#Importing data set
-
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=60), tidy=TRUE) 
+#the tidy arguments prevent the code from running off the page i.e. wrap by itself
 ```
 
+
+```{r}
+#Importing data set
+install.packages("readxl")
+install.packages("openxlsx")
+library(readxl)
+library(openxlsx)
+energy_data1 <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, sheet="Monthly Data", col_names=FALSE )
+
+#Now let's extract the column names from row 11
+read_col_names <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 10,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
+
+#Assign the column names to the data set
+colnames(energy_data1) <- read_col_names
+
+#Visualize the first rows of the data set
+head(energy_data1)
+
+energy_data2 <- read.xlsx(xlsxFile="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",sheet = "Monthly Data", startRow = 13, colNames = FALSE)
+
+read_col_names2  <- read.xlsx(xlsxFile="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",sheet = "Monthly Data", rows = 11, colNames = FALSE)
+
+#Assign the column names to the data set
+colnames(energy_data2) <- read_col_names2
+
+#Visualize the first rows of the data set
+head(energy_data2)
+```
 
 ## Question 1
 You will work only with the following columns: Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption. Create a data frame structure with these three time series only. Use the command head() to verify your data.
 
 ```{r}
-
+library(dplyr)
+timeseries_df <- energy_data1 [, c( "Total Biomass Energy Production", "Total Renewable Energy Production", "Hydroelectric Power Consumption")]
+head(timeseries_df)
 ```
-
 
 ## Question 2
 Transform your data frame in a time series object and specify the starting point and frequency of the time series using the function ts().
 
 ```{r}
+energy_ts <- ts(timeseries_df, start=c(1931,1),frequency=12 )
 
+head(energy_ts[, 1:3])
+dim(energy_ts)
 ```
 
 
@@ -56,14 +86,30 @@ Transform your data frame in a time series object and specify the starting point
 Compute mean and standard deviation for these three series.
 
 ```{r}
+#the number in the apply function refers to 1 for row and 2 for column 
+mean_series<-apply(energy_ts, 2, mean)
+sd_series<-apply(energy_ts, 2, sd)
 
+mean_series
+sd_series
 ```
 
 
 ## Question 4
-Display and interpret the time series plot for each of these variables. Try to make your plot as informative as possible by writing titles, labels, etc. For each plot add a horizontal line at the mean of each series in a different color.
+Display and interpret the time series plot for each of these variables. Try to make your plot as informative as possible by writing titles, labels, etc. For each plot add a horizontal line at the mean of each series 
 
 ```{r}
+#using package ggplot2
+library(ggplot2)
+autoplot(energy_ts[,1])+labs(title = "Time Series Analysis of Total Biomass Energy Production",
+       x = "Time",
+       y = "Total Biomass Energy Production") + geom_line(aes(y = mean_series[1]), color = "purple", size = 1)
+autoplot(energy_ts[,2])+labs(title = "Time Series Analysis of Total Renewable Energy Production",
+       x = "Time",
+       y = "Total Renewable Energy Production") +geom_line(aes(y = mean_series[2]), color = "purple", size = 1)
+autoplot(energy_ts[,3])+labs(title = "Time Series Analysis of Hydroelectric Power Consumption ",
+       x = "Time",
+       y = "Hydroelectric Power Consumption ") +geom_line(aes(y = mean_series[3]), color = "purple", size = 1)
 
 ```
 
@@ -72,23 +118,28 @@ Display and interpret the time series plot for each of these variables. Try to m
 Compute the correlation between these three series. Are they significantly correlated? Explain your answer.
 
 ```{r}
-
+cor(energy_ts) #using a linear correlation function, we see that biomass is highly correlated with renewable energy production. However, Hydroelectric power has close to 0 correlation with Biomass and Total Renewable Energy Production
 ```
-
-
 ## Question 6
 Compute the autocorrelation function from lag 1 up to lag 40 for these three variables. What can you say about these plots? Do the three of them have the same behavior?
 
 ```{r}
-
+Acf(energy_ts[,1],lag.max=40)
+Acf(energy_ts[,2],lag.max=40)
+Acf(energy_ts[,3],lag.max=40)
 ```
-
+ACF of both Total Biomass Energy Production and Total Renewable Energy Production shows a gradual decay of positive autocorrelations, meaning there is a strong deterministic trend and it is not just random noise. All lags are significant as they are above the significant bound. The ACF of Hydroelectric Power Consumption shows persistent autocorrelation across many lags with spikes at the lag 12, 24, and 36 that indicate that there is a seasonality. 
 
 ## Question 7
 Compute the partial autocorrelation function from lag 1 to lag 40 for these three variables. How these plots differ from the ones in Q6?
 
 ```{r}
-
+Pacf(energy_ts[,1],40)
+Pacf(energy_ts[,2],40)
+Pacf(energy_ts[,3],40)
 ```
 
+PACF of Total Biomass Energy Production shows that only lags 1-3, 4, 6, and 23 are positively correlated. Both lags 13 and 25 negatively correlated, and this indicate the seasonal autoregressive effects.
+The PACF of Total Renewable Energy Production exhibits a pattern similar to that of biomass energy production. Significant positive partial autocorrelations are observed at low lags (up to lag 2) and at selected higher lags (5, 7, and 12), suggesting short-term autoregressive behavior combined with seasonal effects. Strong negative partial autocorrelations at lags 6, 13, 25, and 37 further reinforce the presence of seasonal autoregressive structure, with recurring dependence at approximately annual intervals. The PACF of Hydroelectric Power Consumption shows strong positive cpartial autocorrelation at lag 1 and higher lags 9,10, and 24 -> short-term persistence and significant negative correlation at lags 2,3,6,13,15,25,and 37. 
+Compared to ACF, these PACFs indicate short-term and seasonal autoregressive dependence across all three series, while the slowly decaying ACFs with strong seasonal spikes indicates non-stationary and annual seasonality. 
 
