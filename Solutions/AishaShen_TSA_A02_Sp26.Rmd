@@ -22,7 +22,10 @@ R packages needed for this assignment:"forecast","tseries", and "dplyr". Install
 
 ```{r}
 #Load/install required package here
-install.packages(c("forecast", "tseries", "dplyr"))
+#install.packages(c("forecast", "tseries", "dplyr"))
+library(forecast)
+library(tseries)
+library(dplyr)
 ```
 ## Data set information  
 
@@ -36,8 +39,8 @@ knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=60), tidy=TRUE)
 
 ```{r}
 #Importing data set
-install.packages("readxl")
-install.packages("openxlsx")
+#install.packages("readxl")
+#install.packages("openxlsx")
 library(readxl)
 library(openxlsx)
 energy_data1 <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, sheet="Monthly Data", col_names=FALSE )
@@ -102,13 +105,13 @@ Display and interpret the time series plot for each of these variables. Try to m
 #using package ggplot2
 library(ggplot2)
 autoplot(energy_ts[,1])+labs(title = "Time Series Analysis of Total Biomass Energy Production",
-       x = "Time",
+       x = "Year",
        y = "Total Biomass Energy Production") + geom_line(aes(y = mean_series[1]), color = "purple", size = 1)
 autoplot(energy_ts[,2])+labs(title = "Time Series Analysis of Total Renewable Energy Production",
-       x = "Time",
+       x = "Year",
        y = "Total Renewable Energy Production") +geom_line(aes(y = mean_series[2]), color = "purple", size = 1)
 autoplot(energy_ts[,3])+labs(title = "Time Series Analysis of Hydroelectric Power Consumption ",
-       x = "Time",
+       x = "Year",
        y = "Hydroelectric Power Consumption ") +geom_line(aes(y = mean_series[3]), color = "purple", size = 1)
 
 ```
@@ -124,6 +127,7 @@ cor(energy_ts) #using a linear correlation function, we see that biomass is high
 Compute the autocorrelation function from lag 1 up to lag 40 for these three variables. What can you say about these plots? Do the three of them have the same behavior?
 
 ```{r}
+library(forecast)
 Acf(energy_ts[,1],lag.max=40)
 Acf(energy_ts[,2],lag.max=40)
 Acf(energy_ts[,3],lag.max=40)
