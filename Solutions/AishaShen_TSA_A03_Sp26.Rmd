@@ -1,15 +1,16 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2025"
 subtitle: "Assignment 3 - Due date 02/03/26"
-author: "Student Name"
+author: "Aisha Shen"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
+
 ---
 
 ```{r}
-
+library(dplyr)
 ```
 
 ## Directions
@@ -30,17 +31,41 @@ When you have completed the assignment, **Knit** the text and code into a single
 
 ## Questions
 
-Consider the same data you used for A2 from the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx". The data comes from the US Energy Information and Administration and corresponds to the December 2025 Monthly Energy Review. This time you will work only with the following columns: 
-**Total Renewable Energy Production**; and 
-**Hydroelectric Power Consumption**.
+Consider the same data you used for A2 from the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx". The data comes from the US Energy Information and Administration and corresponds to the December 2025 Monthly Energy Review. This time you will work only with the following columns: **Total Renewable Energy Production**; and **Hydroelectric Power Consumption**.
 
 Create a data frame structure with these two time series only.
+
+```{r}
+library(readxl)
+library(openxlsx)
+library(forecast)
+library(Kendall)
+library(tseries)
+energy_data1 <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, sheet="Monthly Data", col_names=FALSE )
+
+#Now let's extract the column names from row 11
+read_col_names <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 10,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
+
+#Assign the column names to the data set
+colnames(energy_data1) <- read_col_names
+
+timeseries_df <- energy_data1 [, c("Total Renewable Energy Production", "Hydroelectric Power Consumption")]
+head(timeseries_df)
+
+```
 
 R packages needed for this assignment:"forecast","tseries", and "Kendall". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
 ```{r}
 #Load/install required package here
+# install.packages(c("forecast","tseries","Kendall","cowplot"))
+#library(forecast)
+#library(Kendall)
+#library(tseries)
 
+energy_ts <- ts(timeseries_df, start=c(1931,1),frequency=12 ) # TAKEN FROM A02
+mean_series<-apply(energy_ts, 2, mean) # TAKEN FROM A02
+sd_series<-apply(energy_ts, 2, sd) # TAKEN FROM A02
 ```
 
 ##Trend Component
@@ -49,21 +74,105 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 
 For each series (Total Renewable Production and Hydroelectric Consumption) create three plots arranged in a row (side-by-side): (1) time series plot, (2) ACF, (3) PACF. Use cowplot::plot_grid() to place them in a grid.
 
+```{r}
+library(ggplot2)
+library(cowplot)
+
+plot_ts_diagnostics <- function(ts_data, col_idx, mean_values, var_name = "Series") 
+  {
+  p1 <- autoplot(ts_data[, col_idx]) +
+    labs(title = paste(var_name, "Time Series"), x = "Year", y = "Value") +
+    geom_line(aes(y = mean_values[col_idx]), color = "purple", size = 1) +
+    theme_minimal()
+  p2 <- ggAcf(ts_data[, col_idx]) + 
+    labs(title = "ACF") +
+    theme_minimal()
+  p3 <- ggPacf(ts_data[, col_idx]) + 
+    labs(title = "PACF") +
+    theme_minimal()
+  plot_grid(p1, p2, p3, ncol = 3, align = 'h', rel_widths = c(1.3, 1, 1))
+}
+
+row_renewable <- plot_ts_diagnostics(energy_ts, 1, mean_series, "Total Renewable Energy Production")
+row_hydro <- plot_ts_diagnostics(energy_ts, 2, mean_series, "Hydroelectric Power Consumption")
+plot(row_hydro)
+plot(row_renewable)
+
+```
+
 ### Q2
 
 From the plot in Q1, do the series Total Renewable Energy Production and Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
+
+> Answer: Total Renewable Energy Production has an increase over time with some seasonal autocorrelation effects as observed by the significance of partial autocorrelation over a gap of approximately 12 time steps. Hydroelectric Power Consumption appears to be noisily centred around a mean close to 80 but with stronger autocorrelation over shorter time lags of 2 time steps. Additionally there appears to be a stronger cyclicity for Hydroelectric Power consumption when looking at the partial autocorrelation function with positive and negative correlations at periodic intervals showing periodic resurgence and decline. 
+
 
 ### Q3
 
 Use the *lm()* function to fit a linear trend to the two time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
 
+```{r}
+time_index <- 1:nrow(energy_ts) 
+model_renewable <- lm(energy_ts[, 1] ~ time_index) # lm(y given x)
+model_hydro     <- lm(energy_ts[, 2] ~ time_index)
+trend_renewable <- fitted(model_renewable)
+trend_hydro     <- fitted(model_hydro)
+summary(model_renewable)
+summary(model_hydro)
+
+hydro_coeffs<-coefficients(model_hydro)
+renew_coeffs<-coefficients(model_renewable)
+print(hydro_coeffs)
+print(renew_coeffs)
+```
+> Answer: The slope for renewable energy is positive (0.75) suggesting that there is a 0.75 unit change in the conditional mean of total renewable energy for a unit change in time. Conversely the slope for hydropower is close to zero (slighly negative) suggesting that there is no effect of time on the uptake of hydropower. The intercepts are somewhat less meaningful but suggest that based on the given data it is safe to assume that the baseline rate at the beginning of this time series for renewable energy would be about 171 while for hydropower it would be about 83. 
+
 ### Q4
 
 Use the regression coefficients to detrend each series (subtract fitted linear trend). Plot detrended series and compare with the original time series from Q1. Describe what changed.
 
+```{r}
+
+detrended_renewable <- energy_ts[, 1] - trend_renewable
+detrended_hydro     <- energy_ts[, 2] - trend_hydro
+
+
+par(mfrow = c(2, 2))
+plot(energy_ts[, 1], main = "Total Renewable Energy Production", ylab = "Value", col = "blue", type = "l") 
+plot(detrended_renewable, main = "Detrended Total Renewable Energy Production", ylab = "Residuals", col = "darkblue", type = "l")
+abline(h = 0, lty = 2)
+
+plot(energy_ts[, 2], main = "Hydroelectric Power Consumption", ylab = "Value", col = "green", type = "l")
+plot(detrended_hydro, main = "Detrended Hydroelectric Power Consumption", ylab = "Residuals", col = "darkgreen", type = "l")
+abline(h = 0, lty = 2)
+
+par(mfrow = c(1, 1))
+
+
+```
+>Answer: Since we remove the trend, we have effectively removed the positive drift observed in Renewable Energy, and are instead plotting the residuals on the y axis. This allows us to more prominently observe the second order effects for total renewable energy, where we can see that while between mid 1930's to 1940's  and after 1970's the rate of growth was faster than the overall trendline( positive residuals), the growth was sluggish and below the trendline rate in the period between 1950 and 1970. Looking at the detrended hydroelectric consumption, it looks almost identical, validating the fact that the original data was likely stationary. 
+
 ### Q5
 
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. You may use plot_grid() again to get them side by side to make it easier to compare. Did the plots change? How?
+
+```{r}
+detrended_renewable_ts <- ts(detrended_renewable, 
+                             start = start(energy_ts), 
+                             frequency = frequency(energy_ts))
+
+detrended_hydro_ts     <- ts(detrended_hydro, 
+                             start = start(energy_ts), 
+                             frequency = frequency(energy_ts))
+
+detrended_mts <- cbind(detrended_renewable_ts, detrended_hydro_ts)
+
+plot_ts_diagnostics(detrended_mts, 1, mean_values = c(0, 0), var_name = "Detrended Renewable")
+plot(row_renewable)
+plot_ts_diagnostics(detrended_mts, 2, mean_values = c(0, 0), var_name = "Detrended Hydro")
+plot(row_hydro)
+```
+>Answer: Compared to Q1, Detrended Total Renewable Energy Production also has an increase over time with some seasonal autocorrelation effects as observed by the significance of partial autocorrelation over a gap of approximately 12 time steps, however the degree of partial autocorrelation is higher and closer to 0.5 and -0.5. This helps us to see stronger correlation at different lags due to the detrending. The detrended Hydroelectric Power Consumption appear to be the same compared to Q1 with stronger autocorrelation over shorter time lags of 2 time steps, however, there is an even stronger cyclicity for Hydroelectric Power consumption with higher positive and negative correlations at periodic intervals showing periodic resurgence and decline. 
 
 ## Seasonal Component
 
@@ -73,16 +182,75 @@ Set aside the detrended series and consider the original series again from Q1 to
 
 Just by looking at the time series and the acf plots, do the series seem to have a seasonal trend? No need to run any code to answer your question. Just type in you answer below.
 
-> Answer:
+> Answer: It does have a seasonal trend as you can see autocorrelation for lag of multiples of 12 months (yearly seasonality).
 
 ### Q7
 
 Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) to the two time series. Ask R to print the summary of the regression. Interpret the regression output. From the results, which series have a seasonal trend? Do the results match you answer to Q6?
 
+```{r}
+
+dummies<-seasonaldummy(energy_ts[,1])
+
+model_seas_renewable <- lm(energy_ts[, 1] ~ dummies) # using the original data and not the detrended data
+dummies<-seasonaldummy(energy_ts[,2])
+
+model_seas_hydro     <- tslm(energy_ts[, 2] ~ season)# using the original data and not the detrended data
+
+seasonal_comp_renewable <- fitted(model_seas_renewable)
+seasonal_comp_hydro     <- fitted(model_seas_hydro)
+
+summary(model_seas_renewable)
+summary(model_seas_hydro)
+
+```
+
 ### Q8
 
 Use the regression coefficients from Q7 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
 
+```{r}
+
+y_renew_orig <- as.numeric(energy_ts[, 1])
+y_hydro_orig <- as.numeric(energy_ts[, 2])
+
+deseason_renewable <- y_renew_orig - as.numeric(fitted(model_seas_renewable)) 
+deseason_hydro     <- y_hydro_orig - as.numeric(fitted(model_seas_hydro)) 
+
+par(mfrow = c(2, 1))
+
+plot(deseason_renewable, type = "l", col = "blue", lwd = 2,
+     main = "Deseasoned Total Renewable Production", 
+     ylab = "Value", xlab = "Time Index")
+
+
+plot(deseason_hydro, type = "l", col = "darkgreen", lwd = 2,
+     main = "Deseasoned Hydroelectric Consumption", 
+     ylab = "Value", xlab = "Time Index")
+
+par(mfrow = c(1, 1))
+
+```
+
 ### Q9
 
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. Did the plots change? How?
+
+```{r}
+deseason_renewable_ts <- ts(deseason_renewable, 
+                            start = start(energy_ts), 
+                            frequency = frequency(energy_ts))
+
+deseason_hydro_ts     <- ts(deseason_hydro, 
+                            start = start(energy_ts), 
+                            frequency = frequency(energy_ts))
+deseason_mts <- cbind(deseason_renewable_ts, deseason_hydro_ts)
+
+means_orig <- c(0, 0)
+
+plot_ts_diagnostics(deseason_mts, 1, mean_values = means_orig, var_name = "Deseasoned Renewable")
+
+plot_ts_diagnostics(deseason_mts, 2, mean_values = means_orig, var_name = "Deseasoned Hydro")
+
+```
+> Answer: Most of the effects we saw before were because of seasonality and now we observe that for renewable, the PACF is much smaller, though still significant for a lag of 12 months in both the time series, whereas for hydro, the PACF is smaller, but still slightly above the significant line at multiple different lags (2,8, etc.)  
