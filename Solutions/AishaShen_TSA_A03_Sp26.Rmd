@@ -41,10 +41,15 @@ library(openxlsx)
 library(forecast)
 library(Kendall)
 library(tseries)
-energy_data1 <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, sheet="Monthly Data", col_names=FALSE )
+energy_data1 <- 
+  read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26
+             /Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, 
+             sheet="Monthly Data", col_names=FALSE )
 
 #Now let's extract the column names from row 11
-read_col_names <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 10,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
+read_col_names <- read_excel(path="/Users/meilishen/Documents
+                          /TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumpt
+                          on_by_Source.xlsx",skip = 10,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
 
 #Assign the column names to the data set
 colnames(energy_data1) <- read_col_names
