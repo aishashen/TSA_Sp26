@@ -26,6 +26,10 @@ R packages needed for this assignment:"forecast","tseries", and "dplyr". Install
 library(forecast)
 library(tseries)
 library(dplyr)
+#Based on the feedback, also need to install these packages in the beginning rather than later 
+#install.packages(c("readxl", "ggplot2")) 
+#library(readxl)
+#library(ggplot2)
 ```
 ## Data set information  
 
@@ -45,7 +49,7 @@ library(openxlsx)
 energy_data1 <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, sheet="Monthly Data", col_names=FALSE )
 
 #Now let's extract the column names from row 11
-read_col_names <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 10,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
+read_col_names <- read_excel(path="/Users/meilishen/Documents/TimeSeries/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 10,n_max = 1, sheet="Monthly Data",col_names=FALSE)
 
 #Assign the column names to the data set
 colnames(energy_data1) <- read_col_names
@@ -71,6 +75,7 @@ You will work only with the following columns: Total Biomass Energy Production, 
 library(dplyr)
 timeseries_df <- energy_data1 [, c( "Total Biomass Energy Production", "Total Renewable Energy Production", "Hydroelectric Power Consumption")]
 head(timeseries_df)
+summary(timeseries_df)
 ```
 
 ## Question 2
