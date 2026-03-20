@@ -137,7 +137,7 @@ ggtsdisplay(diff_ng)
 
 ```
 
-> From the MannKendall test we know that there is a clear upward trend and that the mean is changing. To remove the strong linear trend identified by the Mann-Kendall test, we must take the first difference of the data. We use the ndiffs function for this to get the differenced time series.  Looking at the plot of the first differenced series it appears to be white noise so we can draw inference that d=1. Based only on the plots of Q2 we can see that the PACF shows a sharp spike at lag 1,while the ACF decays slowly. Based on this, we can infer that that q could be 1 and p could also be 1.
+> From the MannKendall test we know that there is a clear upward trend and that the mean is changing. To remove the strong linear trend identified by the Mann-Kendall test, we must take the first difference of the data. We use the ndiffs function for this to get the differenced time series.  Looking at the plot of the first differenced series it appears to be white noise so we can draw inference that d=1. Based only on the plots of Q2 we can see that the PACF shows a sharp spike at lag 1, while the ACF decays slowly. The slowly decaying ACF suggests p=1 and since we have some short shocks in volatility we can infer q=1. 
 
 >In practice a better approach is to consider a range of models and observe the one that gives the lowest AIC. We can shortlist these based on the observed plot of the ACF and PACF of the differenced time series which shows spikes at 1, 2 but also significantly greater at 3. However, since we would like to analytically select a model based on just prior plots before having seen the differenced time series we select the best model to be ARIMA(1,1,1)
 
@@ -172,7 +172,7 @@ Now plot the residuals of the ARIMA fit from Q5 along with residuals ACF on the 
 ```{r}
 checkresiduals(fit111)
 ```
-> The residuals do appear to be white noise based on the time series plot of residuals but there are some bursts of volatility. This is also seen in the histogram where a right tail is observed, though it is mostly a Gaussian centred on 0 (which is what we would expect if this is the correctly specified model)
+> The residuals do appear to be white noise based on the time series plot of residuals but there are some bursts of volatility. This is also seen in the histogram where a right tail is observed, though it is mostly a Gaussian centred on 0 (which is what we would expect if this is the correctly specified model) They appear to be white noise as can be seen by the ACF plot of the residuals which shows the residuals fall within the blue significance bounds, meaning there is no remaining autocorrelated pattern for the model to capture.
 
 ### Q7
 
@@ -213,13 +213,12 @@ summary(fit_seasonal)
 checkresiduals(fit_seasonal)
 ```
 
->Looking at the plot of the residuals we can see that we have explained away the periodicity in the ACF spikes at intervals of
+>Looking at the plot of the residuals we can see that we have explained away the periodicity in the ACF spikes at intervals of intervals of 12 months. This indicates that the seasonal components (P, D, Q) successfully captured the annual cycle that was prominent in the original data.
 ### Q8
 
 Compare the residual series for Q7 and Q6. Can you tell which ARIMA model is better representing the Natural Gas Series? Is that a fair comparison? Explain your response.
 
->If you compare these directly, ARIMA looks better than the seasonal ARIMA. But **you cannot
-directly compare** ARIMA on deseasonalized series with SARIMA on original series because they are modeling different dependent variables. ARIMA residuals look reasonably white, while SARIMA appears to be heteroskedastic with periods of high and low variance. 
+>If you compare these directly, ARIMA looks better than the seasonal ARIMA. But we cannot directly compare ARIMA on deseasonalized series with SARIMA on original series because they are modeling different dependent variables. ARIMA residuals look reasonably like white noise, while SARIMA appears to be heteroskedastic with periods of high and low variance. 
 Since our goal is to forecast the original time series SARIMA is more coherent. Because: 
 * It models trend and seasonality jointly 
 * It keeps the stochastic seasonal structure
