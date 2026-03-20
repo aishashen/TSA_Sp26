@@ -214,6 +214,7 @@ checkresiduals(fit_seasonal)
 ```
 
 >Looking at the plot of the residuals we can see that we have explained away the periodicity in the ACF spikes at intervals of intervals of 12 months. This indicates that the seasonal components (P, D, Q) successfully captured the annual cycle that was prominent in the original data.
+
 ### Q8
 
 Compare the residual series for Q7 and Q6. Can you tell which ARIMA model is better representing the Natural Gas Series? Is that a fair comparison? Explain your response.
@@ -247,4 +248,4 @@ Use the $auto.arima()$ command on the **original series** to let R choose the mo
 auto.arima(ng_ts)
 ```
 
-> We get a AR(1) model with seasonal moving average and a seasonality of 12 months along with a drift component. 
+> We get a AR(1) model with seasonal moving average and a seasonality of 12 months along with a drift component this does not match our inferred model but is close.  
